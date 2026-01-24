@@ -1,0 +1,83 @@
+- name: Backend setup
+  hosts: backend
+  become: yes
+
+  tasks:
+    - name: Install Node.js
+      apt:
+        name: nodejs
+        state: present
+        update_cache: yes
+
+    - name: Install npm
+      apt:
+        name: npm
+        state: present
+
+    - name: Install PM2 globally
+      npm:
+        name: pm2
+        global: yes
+
+    - name: Clone Bite repo
+      git:
+        repo: https://github.com/GOWTHAMI9999/Bite.git
+        dest: /opt/Bite
+        force: yes
+
+    - name: Install backend dependencies
+      npm:
+        path: /opt/Bite/backend
+
+    - name: Start backend using PM2
+      command: pm2 start server.js --name backend
+      args:
+        chdir: /opt/Bite/backend
+    
+- name: Frontend setup
+  hosts: frontend
+  become: yes
+
+  tasks:
+    - name: Install Node.js
+      apt:
+        name: nodejs
+        state: present
+        update_cache: yes
+
+    - name: Install npm
+      apt:
+        name: npm
+        state: present
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Clone Bite repo
+      git:
+        repo: https://github.com/GOWTHAMI9999/Bite.git
+        dest: /opt/Bite
+        force: yes
+
+    - name: Install frontend dependencies
+      npm:
+        path: /opt/Bite/frontend
+
+    - name: Build frontend
+      command: npm run build
+      args:
+        chdir: /opt/Bite/frontend
+
+    - name: Copy dist to Nginx html
+      copy:
+        src: /opt/Bite/frontend/dist/
+        dest: /var/www/html/
+        remote_src: yes
+
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
+
